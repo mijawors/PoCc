@@ -1,0 +1,24 @@
+{
+    "APP": {
+        "TITLE": "🚀 AI PoC Generator",
+        "SUBTITLE": "Turn your ideas into working prototypes in minutes."
+    },
+    "PROJECT": {
+        "NEW_TITLE": "New Project",
+        "NAME_LABEL": "Project Name",
+        "NAME_PLACEHOLDER": "e.g. Fleet Management System",
+        "DESCRIPTION_LABEL": "Description",
+        "DESCRIPTION_PLACEHOLDER": "Describe what you want to build. Be specific about features...",
+        "PROVIDER_LABEL": "AI Model Provider",
+        "GENERATE_BTN": "Generate PoC",
+        "LIST_TITLE": "Your Projects",
+        "CREATED_AT": "Created:",
+        "NO_PROJECTS": "No projects yet. Start by creating one!"
+    },
+    "PROVIDERS": {
+        "OPENAI": "OpenAI (GPT-4o)",
+        "GEMINI": "Google (Gemini Pro) - FREE",
+        "XAI": "xAI (Grok Beta)",
+        "HUGGINGFACE": "Hugging Face (Mistral 7B)"
+    }
+}

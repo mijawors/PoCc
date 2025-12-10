@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: poc_platform_postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: poc_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - poc_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: poc_platform_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - poc_net
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: poc_platform_chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+    networks:
+      - poc_net
+
+networks:
+  poc_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:

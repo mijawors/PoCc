@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  status      String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, FAILED
+  generatedCode Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

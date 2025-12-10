@@ -1,0 +1,55 @@
+<div class="container">
+  <header class="header">
+    <h1>{{ 'APP.TITLE' | translate }}</h1>
+    <p>{{ 'APP.SUBTITLE' | translate }}</p>
+  </header>
+
+  <div class="grid">
+    <!-- Left Column: Create New -->
+    <div class="card create-card">
+      <h2>{{ 'PROJECT.NEW_TITLE' | translate }}</h2>
+      <div class="form-group">
+        <label for="name">{{ 'PROJECT.NAME_LABEL' | translate }}</label>
+        <input type="text" id="name" [(ngModel)]="name" [placeholder]="'PROJECT.NAME_PLACEHOLDER' | translate">
+      </div>
+      <div class="form-group">
+        <label for="description">{{ 'PROJECT.DESCRIPTION_LABEL' | translate }}</label>
+        <textarea id="description" [(ngModel)]="description" rows="5"
+          [placeholder]="'PROJECT.DESCRIPTION_PLACEHOLDER' | translate"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="provider">{{ 'PROJECT.PROVIDER_LABEL' | translate }}</label>
+        <select id="provider" [(ngModel)]="provider">
+          <option value="openai">{{ 'PROVIDERS.OPENAI' | translate }}</option>
+          <option value="gemini">{{ 'PROVIDERS.GEMINI' | translate }}</option>
+          <option value="xai">{{ 'PROVIDERS.XAI' | translate }}</option>
+          <option value="huggingface">{{ 'PROVIDERS.HUGGINGFACE' | translate }}</option>
+        </select>
+      </div>
+      <button class="btn-primary" (click)="createProject()" [disabled]="!name || !description">
+        {{ 'PROJECT.GENERATE_BTN' | translate }}
+      </button>
+    </div>
+
+    <!-- Right Column: History -->
+    <div class="card history-card">
+      <h2>{{ 'PROJECT.LIST_TITLE' | translate }}</h2>
+      <div class="project-list">
+        <div class="project-item" *ngFor="let project of projects">
+          <div class="project-header">
+            <h3>{{ project.name }}</h3>
+            <span class="badge" [class.pending]="project.status === 'PENDING'">{{ project.status }}</span>
+          </div>
+          <p class="project-desc">{{ project.description }}</p>
+          <div class="project-meta">
+            <span>{{ 'PROJECT.CREATED_AT' | translate }} {{ project.createdAt | date:'short' }}</span>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="projects.length === 0">
+          <p>{{ 'PROJECT.NO_PROJECTS' | translate }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
