@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -16,7 +16,28 @@ export class AppController {
   }
 
   @Get('projects')
-  getProjects() {
-    return this.appService.getProjects();
+  getAllProjects() {
+    return this.appService.getAllProjects();
+  }
+
+  @Get('projects/:id')
+  getProject(@Param('id') id: string) {
+    return this.appService.getProject(id);
+  }
+
+  @Post('projects/:id/approve-requirements')
+  approveRequirements(
+    @Param('id') id: string,
+    @Body() body: { approved: boolean }
+  ) {
+    return this.appService.approveRequirements(id, body.approved);
+  }
+
+  @Post('projects/:id/approve-code')
+  approveCode(
+    @Param('id') id: string,
+    @Body() body: { approved: boolean }
+  ) {
+    return this.appService.approveCode(id, body.approved);
   }
 }

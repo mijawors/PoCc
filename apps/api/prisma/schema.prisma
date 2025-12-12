@@ -8,11 +8,18 @@ datasource db {
 }
 
 model Project {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  status      String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, FAILED
-  generatedCode Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                    String   @id @default(uuid())
+  name                  String
+  description           String
+  status                String   @default("PENDING") 
+  // Statuses: PENDING, ANALYZING, AWAITING_REQUIREMENTS_APPROVAL, 
+  //           GENERATING_CODE, AWAITING_CODE_APPROVAL, COMPLETED, REJECTED
+  
+  pendingRequirements   Json?    // Temporary storage for unapproved requirements
+  requirements          Json?    // Approved requirements (moved from pendingRequirements)
+  pendingCode           Json?    // Temporary storage for unapproved code
+  generatedCode         Json?    // Approved code (moved from pendingCode)
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }

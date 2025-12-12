@@ -4,8 +4,8 @@
     <p>{{ 'APP.SUBTITLE' | translate }}</p>
   </header>
 
-  <div class="grid">
-    <!-- Left Column: Create New -->
+  <div class="main-grid">
+    <!-- Left Column: Create New Project -->
     <div class="card create-card">
       <h2>{{ 'PROJECT.NEW_TITLE' | translate }}</h2>
       <div class="form-group">
@@ -29,26 +29,188 @@
       <button class="btn-primary" (click)="createProject()" [disabled]="!name || !description">
         {{ 'PROJECT.GENERATE_BTN' | translate }}
       </button>
+
+      <!-- Project History Toggle -->
+      <button class="btn-secondary" (click)="toggleProjectList()" style="margin-top: 1rem;">
+        📋 {{ showProjectList ? 'Hide' : 'Show' }} Project History ({{ projects.length }})
+      </button>
     </div>
 
-    <!-- Right Column: History -->
-    <div class="card history-card">
-      <h2>{{ 'PROJECT.LIST_TITLE' | translate }}</h2>
-      <div class="project-list">
-        <div class="project-item" *ngFor="let project of projects">
-          <div class="project-header">
-            <h3>{{ project.name }}</h3>
-            <span class="badge" [class.pending]="project.status === 'PENDING'">{{ project.status }}</span>
-          </div>
-          <p class="project-desc">{{ project.description }}</p>
-          <div class="project-meta">
-            <span>{{ 'PROJECT.CREATED_AT' | translate }} {{ project.createdAt | date:'short' }}</span>
+    <!-- Right Column: Live Agent Output -->
+    <div class="card agent-output-card">
+      <div class="agent-header">
+        <h2>🤖 Agent Workspace</h2>
+        <button *ngIf="activeProject" class="btn-clear" (click)="clearActiveProject()">Clear</button>
+      </div>
+
+      <!-- No Active Project -->
+      <div *ngIf="!activeProject" class="empty-workspace">
+        <div class="empty-icon">🚀</div>
+        <h3>Ready to Generate</h3>
+        <p>Create a new project to see AI agents in action!</p>
+      </div>
+
+      <!-- Active Project -->
+      <div *ngIf="activeProject" class="active-project">
+        <div class="project-info">
+          <h3>{{ activeProject.name }}</h3>
+          <div class="status-indicator" [class.analyzing]="activeProject.status === 'ANALYZING'"
+            [class.awaiting]="activeProject.status === 'AWAITING_REQUIREMENTS_APPROVAL' || activeProject.status === 'AWAITING_CODE_APPROVAL'"
+            [class.generating]="activeProject.status === 'GENERATING_CODE'"
+            [class.completed]="activeProject.status === 'COMPLETED'"
+            [class.rejected]="activeProject.status === 'REJECTED'">
+            <span class="status-dot"></span>
+            <span class="status-text">{{ activeProject.status }}</span>
           </div>
         </div>
 
-        <div class="empty-state" *ngIf="projects.length === 0">
-          <p>{{ 'PROJECT.NO_PROJECTS' | translate }}</p>
+        <!-- Analyzing State -->
+        <div *ngIf="activeProject.status === 'ANALYZING'" class="agent-step">
+          <div class="step-header">
+            <span class="step-icon">🕵️</span>
+            <h4>Analyst Agent Working...</h4>
+          </div>
+          <div class="loading-animation">
+            <div class="spinner"></div>
+            <p>Analyzing your project and generating requirements...</p>
+          </div>
         </div>
+
+        <!-- Awaiting Requirements Approval -->
+        <div *ngIf="activeProject.status === 'AWAITING_REQUIREMENTS_APPROVAL'" class="agent-step approval-step">
+          <div class="step-header">
+            <span class="step-icon">📋</span>
+            <h4>Requirements Generated - Your Approval Needed</h4>
+          </div>
+          <div class="step-content">
+            <p class="step-description">The Analyst Agent has generated the following requirements:</p>
+            <div class="requirements-grid">
+              <div *ngFor="let req of activeProject.pendingRequirements; let i = index" class="requirement-card">
+                <span class="req-number">{{ i + 1 }}</span>
+                <span class="req-text">{{ req }}</span>
+              </div>
+            </div>
+            <div class="approval-actions">
+              <button class="btn-approve" (click)="approveRequirements(true)">
+                <span class="btn-icon">✓</span>
+                Approve & Continue
+              </button>
+              <button class="btn-reject" (click)="approveRequirements(false)">
+                <span class="btn-icon">✗</span>
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generating Code State -->
+        <div *ngIf="activeProject.status === 'GENERATING_CODE'" class="agent-step">
+          <div class="step-header">
+            <span class="step-icon">👨‍💻</span>
+            <h4>Backend Generator Working...</h4>
+          </div>
+          <div class="loading-animation">
+            <div class="spinner"></div>
+            <p>Generating NestJS code based on approved requirements...</p>
+          </div>
+        </div>
+
+        <!-- Awaiting Code Approval -->
+        <div *ngIf="activeProject.status === 'AWAITING_CODE_APPROVAL'" class="agent-step approval-step">
+          <div class="step-header">
+            <span class="step-icon">💻</span>
+            <h4>Code Generated - Your Approval Needed</h4>
+          </div>
+          <div class="step-content">
+            <p class="step-description">The Backend Generator has created the following files:</p>
+            <div class="code-preview">
+              <div *ngFor="let file of activeProject.pendingCode" class="code-file-preview">
+                <div class="file-header">
+                  <span class="file-icon">📄</span>
+                  <span class="file-name">{{ file.filename }}</span>
+                  <span class="file-size">{{ file.code.length }} chars</span>
+                </div>
+                <pre class="code-block"><code>{{ file.code }}</code></pre>
+              </div>
+            </div>
+            <div class="approval-actions">
+              <button class="btn-approve" (click)="approveCode(true)">
+                <span class="btn-icon">✓</span>
+                Approve & Save
+              </button>
+              <button class="btn-reject" (click)="approveCode(false)">
+                <span class="btn-icon">✗</span>
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Completed State -->
+        <div *ngIf="activeProject.status === 'COMPLETED'" class="agent-step completed-step">
+          <div class="step-header">
+            <span class="step-icon">✅</span>
+            <h4>Project Completed Successfully!</h4>
+          </div>
+          <div class="step-content">
+            <p class="success-message">All requirements and code have been approved and saved.</p>
+            <div class="completion-summary">
+              <div class="summary-section">
+                <h5>✓ Approved Requirements ({{ activeProject.requirements?.length || 0 }})</h5>
+                <div class="requirements-grid">
+                  <div *ngFor="let req of activeProject.requirements; let i = index" class="requirement-card completed">
+                    <span class="req-number">{{ i + 1 }}</span>
+                    <span class="req-text">{{ req }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="summary-section">
+                <h5>✓ Generated Files ({{ activeProject.generatedCode?.length || 0 }})</h5>
+                <div class="file-list">
+                  <div *ngFor="let file of activeProject.generatedCode" class="file-item">
+                    <span class="file-icon">📄</span>
+                    <span>{{ file.filename }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rejected State -->
+        <div *ngIf="activeProject.status === 'REJECTED'" class="agent-step rejected-step">
+          <div class="step-header">
+            <span class="step-icon">❌</span>
+            <h4>Project Rejected</h4>
+          </div>
+          <p>This project was rejected and will not be completed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project History Sidebar (Collapsible) -->
+  <div class="project-history-sidebar" [class.visible]="showProjectList">
+    <div class="sidebar-header">
+      <h3>Project History</h3>
+      <button class="close-sidebar" (click)="toggleProjectList()">×</button>
+    </div>
+    <div class="project-list">
+      <div class="project-item" *ngFor="let project of projects" (click)="selectProject(project)">
+        <div class="project-header">
+          <h4>{{ project.name }}</h4>
+          <span class="badge-small" [class.analyzing]="project.status === 'ANALYZING'"
+            [class.awaiting]="project.status === 'AWAITING_REQUIREMENTS_APPROVAL' || project.status === 'AWAITING_CODE_APPROVAL'"
+            [class.generating]="project.status === 'GENERATING_CODE'" [class.completed]="project.status === 'COMPLETED'"
+            [class.rejected]="project.status === 'REJECTED'">
+            {{ project.status }}
+          </span>
+        </div>
+        <p class="project-desc">{{ project.description }}</p>
+        <span class="project-date">{{ project.createdAt | date:'short' }}</span>
+      </div>
+      <div class="empty-state" *ngIf="projects.length === 0">
+        <p>No projects yet</p>
       </div>
     </div>
   </div>

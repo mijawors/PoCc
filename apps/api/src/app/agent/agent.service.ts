@@ -177,10 +177,18 @@ export class AgentService {
         const messages = [
             new SystemMessage(systemPrompt),
             new HumanMessage(
-                `Requirements:
-                 ${requirements.join('\n')}
-                 
-                 Generate NestJS code:`
+                `You have ${requirements.length} requirements to implement. Generate complete NestJS code for EACH ONE.
+
+Requirements List:
+${requirements.map((req, i) => `${i + 1}. ${req}`).join('\n')}
+
+IMPORTANT: 
+- Generate a separate feature module for EACH requirement above
+- Each feature should have: Controller, Service, DTO, Entity/Interface, Module
+- That means you should generate approximately ${requirements.length * 5} files total
+- Make all code FULLY FUNCTIONAL with real implementations
+
+Generate the complete NestJS code now:`
             ),
         ];
 
