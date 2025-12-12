@@ -16,10 +16,20 @@ export class ProjectWizard {
   name = '';
   description = '';
   provider = 'openai';
+  model = ''; // Selected model
   projects: any[] = [];
-  activeProject: any = null; // Currently active project being worked on
-  showProjectList = false; // Toggle for project history
+  activeProject: any = null;
+  showProjectList = false;
   private refreshInterval: any;
+
+  // Available models for HuggingFace
+  huggingfaceModels = [
+    { value: 'Qwen/Qwen2.5-7B-Instruct', label: 'Qwen 2.5 7B (Recommended)' },
+    { value: 'meta-llama/Llama-3.2-3B-Instruct', label: 'Llama 3.2 3B' },
+    { value: 'mistralai/Mistral-7B-Instruct-v0.2', label: 'Mistral 7B v0.2' },
+    { value: 'microsoft/Phi-3-mini-4k-instruct', label: 'Phi-3 Mini' },
+    { value: 'google/gemma-2-9b-it', label: 'Gemma 2 9B' },
+  ];
 
   constructor(private http: HttpClient) {
     this.loadProjects();
@@ -43,11 +53,13 @@ export class ProjectWizard {
       .post<any>('/api/projects', {
         name: this.name,
         description: this.description,
-        provider: this.provider
+        provider: this.provider,
+        model: this.model || undefined
       })
       .subscribe((project) => {
         this.name = '';
         this.description = '';
+        this.model = '';
         this.activeProject = project; // Set as active project
         this.loadProjects();
       });

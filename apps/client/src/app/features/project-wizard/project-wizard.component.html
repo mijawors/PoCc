@@ -26,6 +26,16 @@
           <option value="huggingface">{{ 'PROVIDERS.HUGGINGFACE' | translate }}</option>
         </select>
       </div>
+
+      <!-- HuggingFace Model Selection -->
+      <div class="form-group" *ngIf="provider === 'huggingface'">
+        <label for="model">HuggingFace Model</label>
+        <select id="model" [(ngModel)]="model">
+          <option value="">Default (Qwen 2.5 7B)</option>
+          <option *ngFor="let m of huggingfaceModels" [value]="m.value">{{ m.label }}</option>
+        </select>
+      </div>
+
       <button class="btn-primary" (click)="createProject()" [disabled]="!name || !description">
         {{ 'PROJECT.GENERATE_BTN' | translate }}
       </button>
