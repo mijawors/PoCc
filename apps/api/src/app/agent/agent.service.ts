@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage, SystemMessage, BaseMessage } from '@langchain/core/messages';
@@ -16,6 +18,14 @@ interface AgentState {
 }
 
 export type ModelProvider = 'openai' | 'gemini' | 'xai' | 'huggingface';
+
+export const RecommendedHFModels = {
+    Qwen25_7B: 'Qwen/Qwen2.5-7B-Instruct',
+    Llama32_3B: 'meta-llama/Llama-3.2-3B-Instruct',
+    Mistral_7B: 'mistralai/Mistral-7B-Instruct-v0.2',
+    Phi3_Mini: 'microsoft/Phi-3-mini-4k-instruct',
+    Gemma2_9B: 'google/gemma-2-9b-it',
+};
 
 class HuggingFaceChatWrapper extends Runnable<BaseMessage[], BaseMessage> {
     lc_namespace = ['langchain', 'chat_models', 'huggingface'];
@@ -50,17 +60,17 @@ class HuggingFaceChatWrapper extends Runnable<BaseMessage[], BaseMessage> {
 @Injectable()
 export class AgentService {
 
-    private getModel(provider: ModelProvider): BaseChatModel | Runnable {
+    private getModel(provider: ModelProvider, modelName?: string): BaseChatModel | Runnable {
         switch (provider) {
             case 'gemini':
                 return new ChatGoogleGenerativeAI({
-                    model: 'gemini-pro',
+                    model: modelName || 'gemini-pro',
                     maxOutputTokens: 2048,
                     apiKey: process.env['GOOGLE_API_KEY'],
                 });
             case 'xai':
                 return new ChatOpenAI({
-                    modelName: 'grok-beta', // or grok-1
+                    modelName: modelName || 'grok-beta',
                     temperature: 0.7,
                     apiKey: process.env['XAI_API_KEY'],
                     configuration: {
@@ -70,32 +80,30 @@ export class AgentService {
             case 'huggingface':
                 return new HuggingFaceChatWrapper(
                     new HfInference(process.env['HUGGINGFACEHUB_API_KEY']),
-                    'mistralai/Mistral-7B-Instruct-v0.3'
+                    modelName || RecommendedHFModels.Qwen25_7B
                 );
             case 'openai':
             default:
                 return new ChatOpenAI({
                     temperature: 0.7,
-                    modelName: 'gpt-4o',
+                    modelName: modelName || 'gpt-4o',
                     apiKey: process.env['OPENAI_API_KEY'],
                 });
         }
     }
 
-    async analyzeProject(name: string, description: string, provider: ModelProvider = 'openai') {
-        const model = this.getModel(provider);
+    async analyzeProject(name: string, description: string, provider: ModelProvider = 'openai', modelName?: string) {
+        const model = this.getModel(provider, modelName);
 
         // 1. Define the Node: Analyst Agent
         const analystNode = async (state: AgentState) => {
             console.log(`🕵️ Analyst Agent is thinking using ${provider}...`);
 
+            const promptPath = path.join(__dirname, 'assets', 'prompts', 'analyst.md');
+            const systemPrompt = await fs.promises.readFile(promptPath, 'utf-8');
+
             const messages = [
-                new SystemMessage(
-                    `You are an expert Business Analyst and Product Owner. 
-           Your goal is to analyze a project idea and break it down into high-level functional requirements.
-           Return ONLY a JSON array of strings, where each string is a requirement.
-           Example: ["User authentication", "Dashboard view", "Payment integration"]`
-                ),
+                new SystemMessage(systemPrompt),
                 new HumanMessage(
                     `Project Name: ${state.projectName}
            Description: ${state.description}
@@ -110,15 +118,22 @@ export class AgentService {
             try {
                 // Simple parsing of the JSON response
                 const content = response.content.toString();
+                console.log('📝 Raw response from model:', content);
+
                 // Clean up markdown code blocks if present
                 const jsonString = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                console.log('🧹 Cleaned response:', jsonString);
+
                 requirements = JSON.parse(jsonString);
+                console.log('✅ Parsed requirements:', requirements);
             } catch (e) {
-                console.error('Failed to parse requirements', e);
+                console.error('❌ Failed to parse requirements', e);
+                console.error('Response content was:', response.content.toString());
                 requirements = ['Failed to generate requirements automatically.'];
             }
 
             return {
+                ...state,
                 requirements,
                 status: 'ANALYZED',
             };
@@ -127,10 +142,10 @@ export class AgentService {
         // 2. Define the Graph
         const workflow = new StateGraph<AgentState>({
             channels: {
-                projectName: { reducer: (x: string) => x ?? "" },
-                description: { reducer: (x: string) => x ?? "" },
-                requirements: { reducer: (x: string[]) => x ?? [] },
-                status: { reducer: (x: string) => x ?? "PENDING" },
+                projectName: { reducer: (x, y) => y ?? x ?? "" },
+                description: { reducer: (x, y) => y ?? x ?? "" },
+                requirements: { reducer: (x, y) => y ?? x ?? [] },
+                status: { reducer: (x, y) => y ?? x ?? "PENDING" },
             }
         })
             .addNode('analyst', analystNode)
@@ -148,30 +163,19 @@ export class AgentService {
             status: 'PENDING',
         });
 
+        console.log('🔍 Final LangGraph result:', JSON.stringify(result, null, 2));
+
         return result;
     }
-    async generateBackendCode(requirements: string[], provider: ModelProvider = 'openai') {
-        const model = this.getModel(provider);
+    async generateBackendCode(requirements: string[], provider: ModelProvider = 'openai', modelName?: string) {
+        const model = this.getModel(provider, modelName);
         console.log(`👨‍💻 Backend Generator is coding using ${provider}...`);
 
+        const promptPath = path.join(__dirname, 'assets', 'prompts', 'backend-generator.md');
+        const systemPrompt = await fs.promises.readFile(promptPath, 'utf-8');
+
         const messages = [
-            new SystemMessage(
-                `You are a Senior NestJS Developer.
-                 Your task is to generate a simple, working NestJS implementation based on the provided requirements.
-                 Generate the following files:
-                 1. A Controller
-                 2. A Service
-                 3. A Module
-                 4. A DTO
-                 
-                 Return ONLY a JSON array of objects with "filename" and "code" properties.
-                 Example:
-                 [
-                   { "filename": "feature.controller.ts", "code": "..." },
-                   { "filename": "feature.service.ts", "code": "..." }
-                 ]
-                 Do not use markdown blocks. Return raw JSON.`
-            ),
+            new SystemMessage(systemPrompt),
             new HumanMessage(
                 `Requirements:
                  ${requirements.join('\n')}

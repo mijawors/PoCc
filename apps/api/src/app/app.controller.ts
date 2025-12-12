@@ -11,8 +11,8 @@ export class AppController {
   }
 
   @Post('projects')
-  createProject(@Body() body: { name: string; description: string; provider?: 'openai' | 'gemini' }) {
-    return this.appService.createProject(body.name, body.description, body.provider);
+  createProject(@Body() body: { name: string; description: string; provider?: 'openai' | 'gemini' | 'xai' | 'huggingface', model?: string }) {
+    return this.appService.createProject(body.name, body.description, body.provider, body.model);
   }
 
   @Get('projects')

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
-import { AgentService } from './agent.service';
+import { PrismaService } from './database/prisma.service';
+import { AgentService } from './agent/agent.service';
 import { Project } from '@prisma/client';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class AppService {
     return { message: 'Hello API' };
   }
 
-  async createProject(name: string, description: string, provider: 'openai' | 'gemini' = 'openai'): Promise<Project> {
+  async createProject(name: string, description: string, provider: 'openai' | 'gemini' | 'xai' | 'huggingface' = 'openai', model?: string): Promise<Project> {
     // 1. Create Project in DB
     const project = await this.prisma.project.create({
       data: {
@@ -25,7 +25,7 @@ export class AppService {
     });
 
     // 2. Trigger Agent Analysis (Async)
-    this.agentService.analyzeProject(name, description, provider).then(async (result) => {
+    this.agentService.analyzeProject(name, description, provider, model).then(async (result) => {
       console.log('✅ Analysis Complete:', result.requirements);
 
       // Update Project with results (appending to description for now as PoC)
@@ -38,7 +38,7 @@ export class AppService {
       });
 
       // 3. Trigger Backend Generator
-      this.agentService.generateBackendCode(result.requirements as string[], provider).then(async (code) => {
+      this.agentService.generateBackendCode(result.requirements as string[], provider, model).then(async (code) => {
         console.log('✅ Code Generation Complete');
         await this.prisma.project.update({
           where: { id: project.id },
