@@ -12,8 +12,13 @@ model Project {
   name                  String
   description           String
   status                String   @default("PENDING") 
-  // Statuses: PENDING, ANALYZING, AWAITING_REQUIREMENTS_APPROVAL, 
-  //           GENERATING_CODE, AWAITING_CODE_APPROVAL, COMPLETED, REJECTED
+  // Statuses: PENDING, INTERVIEWING, AWAITING_ANSWER, ANALYZING, 
+  //           AWAITING_REQUIREMENTS_APPROVAL, GENERATING_CODE, 
+  //           AWAITING_CODE_APPROVAL, COMPLETED, REJECTED
+  
+  conversationHistory   Json?    // Array of {role: 'agent'|'user', message: string}
+  interviewComplete     Boolean  @default(false)
+  refinedDescription    String?  // Final description after interview
   
   pendingRequirements   Json?    // Temporary storage for unapproved requirements
   requirements          Json?    // Approved requirements (moved from pendingRequirements)

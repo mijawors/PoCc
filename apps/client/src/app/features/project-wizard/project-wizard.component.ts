@@ -15,11 +15,12 @@ import { TranslateModule, TranslatePipe } from '@ngx-translate/core';
 export class ProjectWizard {
   name = '';
   description = '';
-  provider = 'openai';
+  provider = 'gemini'; // Default to Gemini (free)
   model = ''; // Selected model
   projects: any[] = [];
   activeProject: any = null;
   showProjectList = false;
+  currentAnswer = ''; // User's answer to interview questions
   private refreshInterval: any;
 
   // Available models for HuggingFace
@@ -109,5 +110,27 @@ export class ProjectWizard {
         this.refreshActiveProject();
         this.loadProjects();
       });
+  }
+
+  submitAnswer() {
+    if (!this.activeProject || !this.currentAnswer) return;
+
+    this.http.post(`/api/projects/${this.activeProject.id}/submit-answer`, {
+      answer: this.currentAnswer
+    }).subscribe(() => {
+      this.currentAnswer = '';
+      this.refreshActiveProject();
+    });
+  }
+
+  skipInterview() {
+    if (!this.activeProject) return;
+
+    if (confirm('Are you sure you want to skip the interview and proceed with the current information?')) {
+      this.http.post(`/api/projects/${this.activeProject.id}/skip-interview`, {})
+        .subscribe(() => {
+          this.refreshActiveProject();
+        });
+    }
   }
 }

@@ -86,6 +86,56 @@
           </div>
         </div>
 
+        <!-- Interviewing State -->
+        <div *ngIf="activeProject.status === 'INTERVIEWING'" class="agent-step">
+          <div class="step-header">
+            <span class="step-icon">🤔</span>
+            <h4>Interviewer Agent Analyzing...</h4>
+          </div>
+          <div class="loading-animation">
+            <div class="spinner"></div>
+            <p>Analyzing your description and preparing questions...</p>
+          </div>
+        </div>
+
+        <!-- Awaiting Answer State -->
+        <div *ngIf="activeProject.status === 'AWAITING_ANSWER'" class="agent-step interview-step">
+          <div class="step-header">
+            <span class="step-icon">💬</span>
+            <h4>Interview - Please Answer Questions</h4>
+          </div>
+
+          <div class="step-content">
+            <!-- Conversation History -->
+            <div class="conversation">
+              <div *ngFor="let msg of activeProject.conversationHistory" class="message"
+                [class.agent-message]="msg.role === 'agent'" [class.user-message]="msg.role === 'user'">
+                <div class="message-header">
+                  <span class="message-icon">{{ msg.role === 'agent' ? '🤖' : '👤' }}</span>
+                  <span class="message-role">{{ msg.role === 'agent' ? 'Interviewer' : 'You' }}</span>
+                </div>
+                <div class="message-content">{{ msg.message }}</div>
+              </div>
+            </div>
+
+            <!-- Answer Input -->
+            <div class="answer-section">
+              <label>Your Answer:</label>
+              <textarea [(ngModel)]="currentAnswer" rows="4" placeholder="Type your answer here..."
+                class="answer-input">
+              </textarea>
+              <div class="answer-actions">
+                <button class="btn-skip-interview" (click)="skipInterview()">
+                  ⏭️ Skip Interview
+                </button>
+                <button class="btn-submit-answer" (click)="submitAnswer()" [disabled]="!currentAnswer">
+                  Submit Answer →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Awaiting Requirements Approval -->
         <div *ngIf="activeProject.status === 'AWAITING_REQUIREMENTS_APPROVAL'" class="agent-step approval-step">
           <div class="step-header">
